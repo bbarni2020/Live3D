@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <title>Video Chat</title>
+  <title>Live3D</title>
   <style>
     :root {
       --primary-color: #4361ee;
@@ -291,7 +291,6 @@
       position: relative;
       z-index: 2;
       border-radius: var(--border-radius);
-      /* Remove any background color that might create white corners */
       background: transparent;
     }
     
@@ -305,11 +304,9 @@
       border-radius: var(--border-radius);
       position: relative;
       overflow: hidden;
-      /* Ensure background is completely transparent */
       background: transparent;
     }
     
-    /* Ensure the parent elements are also transparent */
     .view-only-mode #video-grid > div {
       background: transparent;
     }
@@ -377,13 +374,13 @@
       font-size: 14px;
       font-weight: 500;
       z-index: 1000;
-      display: none; /* Hide by default */
+      display: none;
       align-items: center;
       gap: 8px;
     }
 
     .view-only-mode .video-counter {
-      display: flex; /* Only show in view-only mode */
+      display: flex;
     }
     
     .video-counter i {
@@ -451,8 +448,6 @@
                 const controls = document.createElement('div');
                 controls.className = 'video-controls';
                 
-                // Mute button removed
-                
                 const stopBtn = document.createElement('button');
                 stopBtn.className = 'video-btn stop-btn';
                 stopBtn.textContent = 'Hide Video';
@@ -491,38 +486,22 @@
       
       videoGridObserver.observe(videoGrid, { childList: true });
 
-      // Auto-refresh for view-only mode
       if (isViewOnlyMode) {
         let currentCount = 0;
         
-        // Function to update counter with animation
         const updateCounterWithAnimation = () => {
           const newCount = document.querySelectorAll('#video-grid video').length;
           
           if (newCount !== currentCount) {
-            // Add animation class
             videoCounter.classList.add('counter-updating');
-            
-            // Update after brief animation delay
             setTimeout(() => {
-              videoCounter.textContent = newCount;
-              videoGrid.className = '';
-              videoGrid.classList.add(`videos-${newCount}`);
-              
-              // Remove animation class
-              setTimeout(() => {
-                videoCounter.classList.remove('counter-updating');
-              }, 300);
-              
               currentCount = newCount;
             }, 300);
           }
         };
         
-        // Initial count
         currentCount = document.querySelectorAll('#video-grid video').length;
         
-        // Set up auto-refresh every 30 seconds
         setInterval(() => {
           updateCounterWithAnimation();
         }, 30000);

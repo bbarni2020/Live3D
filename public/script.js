@@ -5,7 +5,15 @@ function generateRandomUserId() {
   return Math.floor(Math.random() * 100000) + 1;
 }
 
-const userId = generateRandomUserId();
+const urlParams = new URLSearchParams(window.location.search)
+const mode = urlParams.get('mode')
+
+let userId = generateRandomUserId();
+
+if (mode === 'view-only') {
+  userId = "vo" + userId;
+}
+
 const myPeer = new Peer(userId.toString(), {
   host: '/',
   port: '3001'
@@ -15,8 +23,6 @@ const activePeers = {}
 const PEER_TIMEOUT = 10000
 const USER_CHECK_INTERVAL = 15000
 
-const urlParams = new URLSearchParams(window.location.search)
-const mode = urlParams.get('mode')
 const peers = {}
 const videoElements = []
 

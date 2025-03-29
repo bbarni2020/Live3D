@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <script>
+    const ROOM_ID = "<%= roomId %>"
+    const isViewOnlyMode = new URLSearchParams(window.location.search).get('mode') === 'view-only';
+  </script>
+  <script defer src="https://unpkg.com/peerjs@1.2.0/dist/peerjs.min.js"></script>
+  <script src="/socket.io/socket.io.js" defer></script>
+  <script src="script.js" defer></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <title>Video Chat</title>
+  <style>
+    :root {
+      --primary-color: #4361ee;
+      --secondary-color: #3f37c9;
+      --accent-color: #4cc9f0;
+      --background-color: #f8f9fa;
+      --text-color: #212529;
+      --light-gray: #e9ecef;
+      --border-radius: 8px;
+      --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      --danger-color: #e63946;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--background-color);
+      color: var(--text-color);
+      line-height: 1.6;
+      min-height: 100vh;
+      padding: 1.5rem;
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'Poppins', sans-serif;
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--light-gray);
+    }
+    
+    .header h1 {
+      font-size: 1.8rem;
+      color: var(--primary-color);
+    }
+    
+    #video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      background-color: var(--light-gray);
+      min-height: 225px;
+    }
+    
+    .video-container {
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--border-radius);
+      background-color: white;
+      padding: 0.5rem;
+    }
+    
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin: 1rem 0 2rem 0;
+    }
+    
+    .btn {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: var(--border-radius);
+      padding: 0.5rem 1rem;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .btn:hover {
+      background-color: var(--secondary-color);
+      transform: translateY(-2px);
+    }
+    
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 0.85rem;
+      color: #6c757d;
+    }
+    
+    .video-wrapper {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .video-controls {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+    
+    .video-btn {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: var(--border-radius);
+      padding: 0.4rem 0.8rem;
+      font-size: 0.85rem;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .video-btn:hover {
+      background-color: var(--secondary-color);
+      transform: translateY(-2px);
+    }
+    
+    .video-btn.mute-btn {
+      background-color: var(--accent-color);
+    }
+    
+    .video-btn.stop-btn {
+      background-color: #e63946;
+    }
+    
+    .leave-call-btn {
+      background-color: var(--danger-color);
+      color: white;
+      border: none;
+      border-radius: var(--border-radius);
+      padding: 0.75rem 1.5rem;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 1rem;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      box-shadow: 0 4px 8px rgba(230, 57, 70, 0.3);
+    }
+    
+    .leave-call-btn:hover {
+      background-color: #d62828;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(230, 57, 70, 0.4);
+    }
+    
+    .leave-call-btn:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 4px rgba(230, 57, 70, 0.3);
+    }
+    
+    .main-controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 2rem;
+    }
+    
+    .goodbye-section {
+      text-align: center;
+      padding: 2rem;
+      margin-top: 2rem;
+      background-color: white;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    .goodbye-section h2 {
+      margin-bottom: 1rem;
+      color: var(--primary-color);
+    }
+    
+    .goodbye-section p {
+      margin-bottom: 1.5rem;
+      color: var(--text-color);
+    }
+    
+    .goodbye-section .btn {
+      margin-top: 1rem;
+      padding: 0.75rem 1.5rem;
+    }
+    
+    @media (max-width: 768px) {
+      #video-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+    }
+    
+    .view-only-mode {
+      background: linear-gradient(135deg, #6e8efb, #a777e3);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 0;
+    }
+    
+    .view-only-mode .container {
+      max-width: 100%;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      width: 100%;
+    }
+    
+    .view-only-mode .header,
+    .view-only-mode .main-controls,
+    .view-only-mode footer {
+      display: none;
+    }
+    
+    .view-only-mode #video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-auto-rows: minmax(150px, auto);
+      gap: 1rem;
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      padding: 1.5rem;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+    }
+    
+    .view-only-mode video {
+      max-width: 100%;
+      max-height: 100%;
+      width: 100%;
+      height: 100%;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      object-fit: contain;
+      background-color: transparent;
+      position: relative;
+      z-index: 2;
+      border-radius: var(--border-radius);
+      /* Remove any background color that might create white corners */
+      background: transparent;
+    }
+    
+    .view-only-mode .video-wrapper {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      background-color: transparent;
+      padding: 0;
+      border-radius: var(--border-radius);
+      position: relative;
+      overflow: hidden;
+      /* Ensure background is completely transparent */
+      background: transparent;
+    }
+    
+    /* Ensure the parent elements are also transparent */
+    .view-only-mode #video-grid > div {
+      background: transparent;
+    }
+    
+    @media (min-width: 768px) {
+      .view-only-mode #video-grid {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      }
+    }
+    
+    @media (min-width: 1200px) {
+      .view-only-mode #video-grid {
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      }
+    }
+    
+    .view-only-mode #video-grid.videos-1 {
+      grid-template-columns: 1fr;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .view-only-mode #video-grid.videos-2 {
+      grid-template-columns: repeat(2, 1fr);
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .view-only-mode #video-grid.videos-3,
+    .view-only-mode #video-grid.videos-4 {
+      grid-template-columns: repeat(2, 1fr);
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    .view-only-mode #video-grid.videos-5,
+    .view-only-mode #video-grid.videos-6 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .view-only-mode #video-grid.videos-7,
+    .view-only-mode #video-grid.videos-8,
+    .view-only-mode #video-grid.videos-9 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .view-only-mode #video-grid.videos-10,
+    .view-only-mode #video-grid.videos-11,
+    .view-only-mode #video-grid.videos-12 {
+      grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .view-only-mode .video-controls {
+      display: none;
+    }
+
+    .video-counter {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+      padding: 8px 15px;
+      border-radius: var(--border-radius);
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 1000;
+      display: none; /* Hide by default */
+      align-items: center;
+      gap: 8px;
+    }
+
+    .view-only-mode .video-counter {
+      display: flex; /* Only show in view-only mode */
+    }
+    
+    .video-counter i {
+      font-size: 16px;
+    }
+
+    .counter-updating {
+      animation: counterRoll 0.6s ease-in-out;
+    }
+    
+    @keyframes counterRoll {
+      0% { transform: translateY(0); opacity: 1; }
+      50% { transform: translateY(-20px); opacity: 0; }
+      50.1% { transform: translateY(20px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="video-counter"><i class="fas fa-user-group"></i> <span id="video-count">0</span></div>
+  <div class="container">
+    <header class="header">
+      <h1>Live Video Chat</h1>
+    </header>
+    
+    <div id="video-grid"></div>
+    
+    <div class="main-controls">
+      <button id="leaveCallBtn" class="leave-call-btn">Leave Call</button>
+    </div>
+    
+    <footer>
+      <p>© 2023 Live3D Video Chat Platform</p>
+    </footer>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (isViewOnlyMode) {
+        document.body.classList.add('view-only-mode');
+        document.title = "View Only - Live3D";
+      }
+      
+      const videoCounter = document.querySelector('#video-count');
+      const videoGrid = document.getElementById('video-grid');
+      
+      const updateVideoCount = () => {
+        const videoCount = document.querySelectorAll('#video-grid video').length;
+        videoCounter.textContent = videoCount;
+        
+        videoGrid.className = '';
+        videoGrid.classList.add(`videos-${videoCount}`);
+      };
+      
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+            mutation.addedNodes.forEach((node) => {
+              if (node.nodeName === 'VIDEO' && !node.parentElement.classList.contains('video-wrapper')) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'video-wrapper';
+                
+                const parent = node.parentElement;
+                
+                const controls = document.createElement('div');
+                controls.className = 'video-controls';
+                
+                // Mute button removed
+                
+                const stopBtn = document.createElement('button');
+                stopBtn.className = 'video-btn stop-btn';
+                stopBtn.textContent = 'Hide Video';
+                stopBtn.onclick = () => {
+                  if (node.style.display === 'none') {
+                    node.style.display = 'block';
+                    stopBtn.textContent = 'Hide Video';
+                  } else {
+                    node.style.display = 'none';
+                    stopBtn.textContent = 'Show Video';
+                  }
+                };
+                
+                controls.appendChild(stopBtn);
+                
+                parent.replaceChild(wrapper, node);
+                wrapper.appendChild(node);
+                wrapper.appendChild(controls);
+              }
+            });
+            
+            updateVideoCount();
+          }
+        });
+      });
+      
+      observer.observe(document.getElementById('video-grid'), { childList: true, subtree: true });
+
+      const videoGridObserver = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.removedNodes.length > 0) {
+            updateVideoCount();
+          }
+        });
+      });
+      
+      videoGridObserver.observe(videoGrid, { childList: true });
+
+      // Auto-refresh for view-only mode
+      if (isViewOnlyMode) {
+        let currentCount = 0;
+        
+        // Function to update counter with animation
+        const updateCounterWithAnimation = () => {
+          const newCount = document.querySelectorAll('#video-grid video').length;
+          
+          if (newCount !== currentCount) {
+            // Add animation class
+            videoCounter.classList.add('counter-updating');
+            
+            // Update after brief animation delay
+            setTimeout(() => {
+              videoCounter.textContent = newCount;
+              videoGrid.className = '';
+              videoGrid.classList.add(`videos-${newCount}`);
+              
+              // Remove animation class
+              setTimeout(() => {
+                videoCounter.classList.remove('counter-updating');
+              }, 300);
+              
+              currentCount = newCount;
+            }, 300);
+          }
+        };
+        
+        // Initial count
+        currentCount = document.querySelectorAll('#video-grid video').length;
+        
+        // Set up auto-refresh every 30 seconds
+        setInterval(() => {
+          updateCounterWithAnimation();
+        }, 30000);
+      }
+    });
+  </script>
+</body>
+</html>
